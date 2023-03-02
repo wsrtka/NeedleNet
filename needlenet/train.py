@@ -13,6 +13,13 @@ from model import Average
 
 DATASET_PATH = "./data"
 BATCH_SIZE = 64
+DEVICE = (
+    "mps"
+    if torch.backends.mps.is_available()
+    else "cuda"
+    if torch.cuda.is_available()
+    else "cpu"
+)
 
 
 if __name__ == "__main__":
