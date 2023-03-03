@@ -11,11 +11,10 @@ from torchvision.datasets import DatasetFolder
 
 from model import Average
 from engine import train_model
-from utils import loader
 
 
 DATASET_PATH = "./data"
-BATCH_SIZE = 1
+BATCH_SIZE = 32
 EPOCHS = 3
 LERANING_RATE = 1e-3
 DEVICE = (
