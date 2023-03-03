@@ -19,3 +19,7 @@ class Average(nn.Module):
         output = x.mean(dim=self.axis)
         output = torch.squeeze(output, self.axis)
         return output
+
+
+class NeedleNet(nn.Module):
+    """All convolutional CNN for audio file classification."""

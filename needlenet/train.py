@@ -2,17 +2,22 @@
 # pylint: disable=import-error
 
 import torch
+import torchmetrics
 
 from torchaudio import load, transforms, pipelines
-from torch import nn
+from torch import nn, optim
 from torch.utils.data import random_split, DataLoader
 from torchvision.datasets import DatasetFolder
 
 from model import Average
+from engine import train_model
+from utils import loader
 
 
 DATASET_PATH = "./data"
-BATCH_SIZE = 64
+BATCH_SIZE = 1
+EPOCHS = 3
+LERANING_RATE = 1e-3
 DEVICE = (
     "mps"
     if torch.backends.mps.is_available()
@@ -40,3 +45,8 @@ if __name__ == "__main__":
     bundle = pipelines.WAV2VEC2_ASR_BASE_10M
     model = bundle.get_model()
     model.aux = nn.Sequential(Average(axis=-2), nn.Linear(768, 5))
+    # prepare training
+    loss_fn = nn.CrossEntropyLoss()
+    acc_fn = torchmetrics.Accuracy(task="multiclass", num_classes=5)
+    optimizer = optim.SGD(model.parameters(), lr=LERANING_RATE)
+    train_model(model, EPOCHS, loss_fn, acc_fn, train_dl, test_dl, optimizer)
