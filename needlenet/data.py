@@ -4,8 +4,8 @@
 import torch
 import numpy as np
 
-from librosa import stft
 from torchaudio import load, functional
+from torchaudio.transforms import AmplitudeToDB, MelSpectogram
 from torchvision.datasets import DatasetFolder
 
 
@@ -28,14 +28,27 @@ class AudioDataset(DatasetFolder):
         signal, sr = load(audio_path)
         if sr != self.sample_rate:
             signal = functional.resample(signal, sr, self.sample_rate)
-        signal = self._transform_signal(signal)
+        spec = self._transform_signal(signal)
         label = self.file_to_class[index][1]
-        return signal, label
+        return spec, label
 
     def _transform_signal(self, signal):
         signal = signal.numpy()
-        signal = stft(signal, hop_length=15, win_length=25, dtype=np.float32)
-        return torch.tensor(signal)
+        signal = self._time_shift(signal)
+        spec = self._convert_to_spectogram(signal)
+        return torch.tensor(spec)
+
+    def _time_shift(self, signal):
+        _, sig_len = signal.shape
+        shift = int(np.random.rand(1) * sig_len)
+        return np.roll(signal, shift)
+
+    def _convert_to_spectogram(self, signal):
+        spec = MelSpectogram(self.sample_rate, n_fft=1024, hop_length=None, n_mels=64)(
+            signal
+        )
+        spec = AmplitudeToDB(top_db=80)(signal)
+        return spec
 
 
 # used for testing
