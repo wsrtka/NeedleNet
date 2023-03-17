@@ -4,7 +4,7 @@
 import torch
 import torchmetrics
 
-from torchaudio import load, transforms, pipelines
+from torchaudio import load, transforms
 from torch import nn, optim
 from torch.utils.data import random_split, DataLoader
 from torchvision.datasets import DatasetFolder
@@ -14,8 +14,8 @@ from engine import train_model
 
 
 DATASET_PATH = "./data"
-BATCH_SIZE = 1
-EPOCHS = 3
+BATCH_SIZE = 16
+EPOCHS = 1
 LERANING_RATE = 1e-3
 DEVICE = (
     "mps"
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # bundle = pipelines.WAV2VEC2_ASR_BASE_10M
     # model = bundle.get_model()
     # model.aux = nn.Sequential(Average(axis=-2), nn.Linear(768, 5))
-    model = NeedleNet(5)
+    model = NeedleNet(num_classes=5)
     # prepare training
     loss_fn = nn.CrossEntropyLoss()
     acc_fn = torchmetrics.Accuracy(task="multiclass", num_classes=5)
