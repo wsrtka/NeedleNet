@@ -14,8 +14,7 @@ def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer):
         train_loss = 0
         model.train()
         for batch, (X, y) in enumerate(train_dl):
-            print(X.shape, y.shape)
-            y_pred, _ = model(X)
+            y_pred = model(X)
             print(y_pred, X)
             loss = loss_fn(y_pred, y)
             train_loss += loss
