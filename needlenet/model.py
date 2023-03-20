@@ -58,8 +58,8 @@ class NeedleNet(nn.Module):
         self.ap = nn.AdaptiveAvgPool2d(output_size=1)
         self.lin = nn.Linear(64, num_classes)
 
-        self.feature_extractor = nn.Sequential(feature_extractor)
-        self.classifier_head = nn.Sequential(classifier_head)
+        self.feature_extractor = nn.Sequential(*feature_extractor)
+        self.classifier_head = nn.Sequential(*classifier_head)
 
     def forward(self, x):
         """Predict audio file class."""

@@ -5,7 +5,7 @@ import torch
 import numpy as np
 
 from torchaudio import load, functional
-from torchaudio.transforms import AmplitudeToDB, MelSpectogram
+from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 from torchvision.datasets import DatasetFolder
 
 
@@ -35,8 +35,9 @@ class AudioDataset(DatasetFolder):
     def _transform_signal(self, signal):
         signal = signal.numpy()
         signal = self._time_shift(signal)
+        signal = torch.from_numpy(signal)
         spec = self._convert_to_spectogram(signal)
-        return torch.tensor(spec)
+        return spec
 
     def _time_shift(self, signal):
         _, sig_len = signal.shape
@@ -44,10 +45,10 @@ class AudioDataset(DatasetFolder):
         return np.roll(signal, shift)
 
     def _convert_to_spectogram(self, signal):
-        spec = MelSpectogram(self.sample_rate, n_fft=1024, hop_length=None, n_mels=64)(
+        spec = MelSpectrogram(self.sample_rate, n_fft=1024, hop_length=None, n_mels=64)(
             signal
         )
-        spec = AmplitudeToDB(top_db=80)(signal)
+        spec = AmplitudeToDB(top_db=80)(spec)
         return spec
 
 
