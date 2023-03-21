@@ -13,8 +13,8 @@ from data import AudioDataset
 
 
 DATASET_PATH = "./new_data"
-BATCH_SIZE = 4
-EPOCHS = 1
+BATCH_SIZE = 64
+EPOCHS = 100
 LERANING_RATE = 1e-3
 DEVICE = (
     "mps"
@@ -36,6 +36,7 @@ if __name__ == "__main__":
     test_dl = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True)
     # create model
     model = NeedleNet(num_classes=5)
+    model = model.to(DEVICE)
     # prepare training
     loss_fn = nn.CrossEntropyLoss()
     acc_fn = torchmetrics.Accuracy(task="multiclass", num_classes=5)

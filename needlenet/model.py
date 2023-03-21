@@ -56,7 +56,9 @@ class NeedleNet(nn.Module):
 
         # linear classifier
         self.ap = nn.AdaptiveAvgPool2d(output_size=1)
+        self.fl = nn.Flatten()
         self.lin = nn.Linear(64, num_classes)
+        classifier_head += [self.ap, self.fl, self.lin]
 
         self.feature_extractor = nn.Sequential(*feature_extractor)
         self.classifier_head = nn.Sequential(*classifier_head)

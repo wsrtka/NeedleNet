@@ -15,7 +15,6 @@ def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer):
         model.train()
         for batch, (X, y) in enumerate(train_dl):
             y_pred = model(X)
-            print(y_pred, X)
             loss = loss_fn(y_pred, y)
             train_loss += loss
             optimizer.zero_grad()
@@ -23,7 +22,9 @@ def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer):
             optimizer.step()
 
             if batch % 10 == 0:
-                print(f"{batch * len(X) / len(train_dl.dataset)} samples, loss: {loss}")
+                print(
+                    f"{round(100 * batch * len(X) / len(train_dl.dataset), 2)}%, loss: {loss}"
+                )
 
         train_loss /= len(train_dl)
         test_loss = 0
@@ -32,9 +33,9 @@ def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer):
         model.eval()
         with torch.inference_mode():
             for X, y in test_dl:
-                test_pred, _ = model(X)
+                test_pred = model(X)
                 test_loss += loss_fn(test_pred, y)
-                test_acc += acc_fn(y_true=y, y_pred=test_pred.argmax(dim=1))
+                test_acc += acc_fn(test_pred, y)
 
             test_loss /= len(test_dl)
             test_acc /= len(test_dl)
