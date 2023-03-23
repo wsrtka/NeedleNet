@@ -13,7 +13,7 @@ from data import AudioDataset
 
 
 DATASET_PATH = "./new_data"
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 EPOCHS = 100
 LERANING_RATE = 1e-3
 DEVICE = (
