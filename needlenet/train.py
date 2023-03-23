@@ -41,4 +41,4 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     acc_fn = torchmetrics.Accuracy(task="multiclass", num_classes=5)
     optimizer = optim.SGD(model.parameters(), lr=LERANING_RATE)
-    train_model(model, EPOCHS, loss_fn, acc_fn, train_dl, test_dl, optimizer)
+    train_model(model, EPOCHS, loss_fn, acc_fn, train_dl, test_dl, optimizer, DEVICE)

@@ -7,14 +7,16 @@ from tqdm.auto import tqdm
 
 
 # pylint: disable=invalid-name,too-many-arguments,too-many-locals
-def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer):
+def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer, device):
     """Function to train model."""
     for epoch in tqdm(range(epochs)):
         print(f"Epoch #{epoch}/{epochs}")
         train_loss = 0
         model.train()
         for batch, (X, y) in enumerate(train_dl):
+            X = X.to(device)
             y_pred = model(X)
+            y_pred = y_pred.to("cpu")
             loss = loss_fn(y_pred, y)
             train_loss += loss
             optimizer.zero_grad()
@@ -33,7 +35,9 @@ def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer):
         model.eval()
         with torch.inference_mode():
             for X, y in test_dl:
+                X = X.to(device)
                 test_pred = model(X)
+                test_pred = test_pred.to("cpu")
                 test_loss += loss_fn(test_pred, y)
                 test_acc += acc_fn(test_pred, y)
 
