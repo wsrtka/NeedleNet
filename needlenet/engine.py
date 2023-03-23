@@ -2,6 +2,7 @@
 # pylint: disable=import-error
 
 import torch
+from torch.utils.tensorboard import SummaryWriter
 
 from tqdm.auto import tqdm
 
@@ -9,6 +10,8 @@ from tqdm.auto import tqdm
 # pylint: disable=invalid-name,too-many-arguments,too-many-locals
 def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer, device):
     """Function to train model."""
+    writer = SummaryWriter()
+
     for epoch in tqdm(range(epochs)):
         print(f"Epoch #{epoch}/{epochs}")
         train_loss = 0
@@ -29,6 +32,7 @@ def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer, de
                 )
 
         train_loss /= len(train_dl)
+        writer.add_scalar("Train loss", train_loss, epoch)
         test_loss = 0
         test_acc = 0
 
@@ -42,8 +46,12 @@ def train_model(model, epochs, loss_fn, acc_fn, train_dl, test_dl, optimizer, de
                 test_acc += acc_fn(test_pred, y)
 
             test_loss /= len(test_dl)
+            writer.add_scalar("Test loss", test_loss, epoch)
             test_acc /= len(test_dl)
+            writer.add_scalar("Test accuracy", test_acc, epoch)
 
         print(
             f"Train loss: {train_loss:.5f} | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%"
         )
+
+    writer.close()
