@@ -7,7 +7,6 @@ import numpy as np
 from torchaudio import load, functional
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 from torchvision.datasets import DatasetFolder
-from pydub.effects import normalize
 
 
 class AudioDataset(DatasetFolder):
@@ -35,8 +34,8 @@ class AudioDataset(DatasetFolder):
 
     def _transform_signal(self, signal):
         signal = signal.numpy()
-        signal = normalize(signal)
         signal = self._time_shift(signal)
+        signal = signal / np.max(np.abs(signal))
         signal = torch.from_numpy(signal)
         spec = self._convert_to_spectogram(signal)
         return spec

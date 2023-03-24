@@ -21,8 +21,69 @@ class Average(nn.Module):
         return output
 
 
+class ConvBlock(nn.Module):
+    """Module implementing a convolution block."""
+
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        conv_block = []
+        conv_block.append(nn.Conv2d(in_channels, out_channels, 3, 1, 1))
+        conv_block.append(nn.BatchNorm2d(out_channels))
+        conv_block.append(nn.ReLU())
+        conv_block.append(nn.Conv2d(out_channels, out_channels, 3, 1, 1))
+        conv_block.append(nn.ReLU())
+        conv_block.append(nn.Dropout2d(0.2))
+        conv_block.append(nn.AvgPool2d(2))
+        self.conv_block = nn.Sequential(*conv_block)
+
+    def forward(self, x):
+        """Forward pass for convolution block."""
+        return self.conv_block(x)
+
+
+# pylint: disable=too-few-public-methods, invalid-name
+class NeedleNetV2(nn.Module):
+    """All convolutional CNN for audio file classification."""
+
+    def __init__(self, num_classes):
+        super().__init__()
+        feature_extractor = []
+        classifier_head = []
+
+        # first convolution block
+        feature_extractor += [ConvBlock(1, 64)]
+
+        # second convolution block
+        feature_extractor += [ConvBlock(64, 128)]
+
+        # third convolutional block
+        feature_extractor += [ConvBlock(128, 256)]
+
+        # fourth convolutional block
+        feature_extractor += [ConvBlock(256, 512)]
+
+        # linear classifier
+        classifier_head.append(nn.AdaptiveAvgPool2d(output_size=1))
+        classifier_head.append(nn.Flatten())
+        classifier_head.append(nn.Dropout1d(0.5))
+        classifier_head.append(nn.Linear(512, 128))
+        classifier_head.append(nn.PReLU())
+        classifier_head.append(nn.BatchNorm1d(128))
+        classifier_head.append(nn.Dropout1d(0.5))
+        classifier_head.append(nn.Linear(128, num_classes))
+
+        self.feature_extractor = nn.Sequential(*feature_extractor)
+        self.classifier_head = nn.Sequential(*classifier_head)
+
+    def forward(self, x):
+        """Predict audio file class."""
+        output = self.feature_extractor(x)
+        output = self.classifier_head(output)
+        return output
+
+
 # pylint: disable=too-few-public-methods, invalid-name,too-many-instance-attributes
-class NeedleNet(nn.Module):
+class NeedleNetV1(nn.Module):
     """All convolutional CNN for audio file classification."""
 
     def __init__(self, num_classes):
@@ -75,5 +136,5 @@ class NeedleNet(nn.Module):
 
 
 if __name__ == "__main__":
-    net = NeedleNet(5)
+    net = NeedleNetV1(5)
     print(net)
