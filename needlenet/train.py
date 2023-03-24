@@ -2,7 +2,6 @@
 # pylint: disable=import-error
 
 import torch
-import torchmetrics
 
 from torch import nn, optim
 from torch.utils.data import random_split, DataLoader
@@ -14,8 +13,8 @@ from data import AudioDataset
 
 DATASET_PATH = "./new_data"
 BATCH_SIZE = 32
-EPOCHS = 100
-LERANING_RATE = 1e-3
+EPOCHS = 120
+LERANING_RATE = 1e-2
 DEVICE = (
     "mps"
     if torch.backends.mps.is_available()
@@ -39,6 +38,5 @@ if __name__ == "__main__":
     model = model.to(DEVICE)
     # prepare training
     loss_fn = nn.CrossEntropyLoss()
-    acc_fn = torchmetrics.Accuracy(task="multiclass", num_classes=5)
-    optimizer = optim.SGD(model.parameters(), lr=LERANING_RATE)
-    train_model(model, EPOCHS, loss_fn, acc_fn, train_dl, test_dl, optimizer, DEVICE)
+    optimizer = optim.SGD(model.parameters(), lr=LERANING_RATE, momentum=0.9)
+    train_model(model, EPOCHS, loss_fn, train_dl, test_dl, optimizer, DEVICE)
