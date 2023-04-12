@@ -55,7 +55,7 @@ class AudioDataset(DatasetFolder):
 
 # used for testing
 if __name__ == "__main__":
-    nd = AudioDataset("./data", ("wav"), 44500)
+    nd = AudioDataset("./new_data", ("wav"), 22050)
     print(nd.classes)
     print(len(nd))
     print(nd[0], nd[0][0].shape)

@@ -6,14 +6,14 @@ import torch
 from torch import nn, optim
 from torch.utils.data import random_split, DataLoader
 
-from model import NeedleNet
+from model import NeedleNetV1
 from engine import train_model
 from data import AudioDataset
 
 
 DATASET_PATH = "./new_data"
 BATCH_SIZE = 32
-EPOCHS = 120
+EPOCHS = 500
 LERANING_RATE = 1e-2
 DEVICE = (
     "mps"
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
     test_dl = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True)
     # create model
-    model = NeedleNet(num_classes=5)
+    model = NeedleNetV1(num_classes=5)
     model = model.to(DEVICE)
     # prepare training
     loss_fn = nn.CrossEntropyLoss()

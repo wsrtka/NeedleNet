@@ -137,4 +137,11 @@ class NeedleNetV1(nn.Module):
 
 if __name__ == "__main__":
     net = NeedleNetV1(5)
+    torch.onnx.export(
+        net,
+        torch.rand(1, 1, 64, 44),
+        "model.onnx",
+        input_names=["Mel Spectrogram"],
+        output_names=["Prediction"],
+    )
     print(net)
