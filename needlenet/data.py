@@ -9,7 +9,7 @@ from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 from torchvision.datasets import DatasetFolder
 
 
-class AudioDataset(DatasetFolder):
+class AudioDatasetV1(DatasetFolder):
     """Datset used for loading audio files."""
 
     def __init__(self, root, extensions, sample_rate):
@@ -55,7 +55,7 @@ class AudioDataset(DatasetFolder):
 
 # used for testing
 if __name__ == "__main__":
-    nd = AudioDataset("./new_data", ("wav"), 22050)
+    nd = AudioDatasetV1("./new_data", ("wav"), 22050)
     print(nd.classes)
     print(len(nd))
     print(nd[0], nd[0][0].shape)

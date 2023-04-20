@@ -1,6 +1,8 @@
 """File containing training functions."""
 # pylint: disable=import-error
 
+from datetime import date
+
 import torch
 import torchmetrics
 
@@ -79,5 +81,7 @@ def train_model(model, epochs, loss_fn, train_dl, test_dl, optimizer, device):
         print(
             f"Train loss: {train_loss:.5f} | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%"
         )
+
+        torch.save(model.state_dict(), f"./models/v1/model{date.today()}.pt")
 
     writer.close()
