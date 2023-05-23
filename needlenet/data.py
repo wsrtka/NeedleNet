@@ -7,6 +7,7 @@ import numpy as np
 from torchaudio import load, functional
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 from torchvision.datasets import DatasetFolder
+from torchvision.io import read_image, ImageReadMode
 
 
 class AudioDatasetV1(DatasetFolder):
@@ -53,9 +54,47 @@ class AudioDatasetV1(DatasetFolder):
         return spec
 
 
+class CWTDataset(DatasetFolder):
+    def __init__(self, root, extensions=(".png"), dwt_dir="DWT", emd_dir="EMD"):
+        self.root = root
+        self.classes, self.class_to_idx = self.find_classes(self.root)
+        self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
+        self.file_to_class = DatasetFolder.make_dataset(
+            self.root, self.class_to_idx, extensions=extensions
+        )
+        self.dwt_dir = dwt_dir
+        self.emd_dir = emd_dir
+        self._link_files()
+
+    def __len__(self):
+        return len(self.file_to_class)
+
+    def __getitem__(self, index):
+        # read file path and label
+        file_path, label = self.file_to_class[index]
+        cwt_spec = read_image(file_path, ImageReadMode.GRAY)
+        # read corresponding dwt
+
+        # read corresponding emd
+
+        return cwt_spec, label
+
+    def _link_files(self):
+        self.file_to_dwt = []
+        self.file_to_emd = []
+        for file, idx in self.file_to_class:
+            base_name = file.split("/")[-1]
+            base_name = base_name.split("_")[0]
+            dwt_link = f"{self.root}/{self.idx_to_class[idx]}/{self.dwt_dir}/{base_name}_dwt_scales.csv"
+            emd_link = f"{self.root}/{self.idx_to_class[idx]}/{self.emd_dir}/{base_name}_emd_imfs.csv"
+            self.file_to_dwt.append(dwt_link)
+            self.file_to_emd.append(emd_link)
+
+
 # used for testing
 if __name__ == "__main__":
-    nd = AudioDatasetV1("./new_data", ("wav"), 22050)
+    nd = CWTDataset("./cwt_data")
     print(nd.classes)
     print(len(nd))
     print(nd[0], nd[0][0].shape)
+    print(nd.file_to_class[0])
