@@ -21,8 +21,54 @@ class Average(nn.Module):
         return output
 
 
+# pylint: disable=too-few-public-methods, invalid-name
+class NeedleNetV2(nn.Module):
+    """All convolutional CNN for audio file classification."""
+
+    def __init__(self, num_classes):
+        super().__init__()
+        feature_extractor = []
+        classifier_head = []
+
+        feature_extractor.append(nn.Conv2d(1, 12, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(12))
+        feature_extractor.append(nn.ReLU())
+        feature_extractor.append(nn.MaxPool2d(3, 2))
+
+        feature_extractor.append(nn.Conv2d(12, 24, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(24))
+        feature_extractor.append(nn.ReLU())
+        feature_extractor.append(nn.MaxPool2d(3, 2))
+
+        feature_extractor.append(nn.Conv2d(24, 48, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(48))
+        feature_extractor.append(nn.ReLU())
+        feature_extractor.append(nn.MaxPool2d(3, 2))
+
+        feature_extractor.append(nn.Conv2d(48, 48, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(48))
+        feature_extractor.append(nn.ReLU())
+
+        feature_extractor.append(nn.Conv2d(48, 48, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(48))
+        feature_extractor.append(nn.ReLU())
+        feature_extractor.append(nn.MaxPool2d(3, 2))
+
+        classifier_head.append(nn.Flatten())
+        classifier_head.append(nn.Linear(1344, num_classes))
+
+        self.feature_extractor = nn.Sequential(*feature_extractor)
+        self.classifier_head = nn.Sequential(*classifier_head)
+
+    def forward(self, x):
+        """Predict audio file class."""
+        output = self.feature_extractor(x)
+        output = self.classifier_head(output)
+        return output
+
+
 # pylint: disable=too-few-public-methods, invalid-name,too-many-instance-attributes
-class NeedleNet(nn.Module):
+class NeedleNetV1(nn.Module):
     """All convolutional CNN for audio file classification."""
 
     def __init__(self, num_classes):
@@ -31,35 +77,41 @@ class NeedleNet(nn.Module):
         classifier_head = []
 
         # first convolution block
-        self.conv1 = nn.Conv2d(1, 8, kernel_size=5, stride=2, padding=2)
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=3)
+        self.bn1 = nn.BatchNorm2d(64)
         self.relu1 = nn.ReLU()
-        self.bn1 = nn.BatchNorm2d(8)
-        feature_extractor += [self.conv1, self.relu1, self.bn1]
+        self.dropout1 = nn.Dropout2d(0.2)
+        feature_extractor += [self.conv1, self.relu1, self.dropout1, self.bn1]
 
         # second convolution block
-        self.conv2 = nn.Conv2d(8, 16, kernel_size=3, stride=2, padding=1)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=3)
+        self.bn2 = nn.BatchNorm2d(128)
         self.relu2 = nn.ReLU()
-        self.bn2 = nn.BatchNorm2d(16)
-        feature_extractor += [self.conv2, self.relu2, self.bn2]
+        self.dropout2 = nn.Dropout2d(0.2)
+        feature_extractor += [self.conv2, self.relu2, self.dropout2, self.bn2]
 
         # third convolutional block
-        self.conv3 = nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1)
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1)
         self.relu3 = nn.ReLU()
-        self.bn3 = nn.BatchNorm2d(32)
-        feature_extractor += [self.conv3, self.relu3, self.bn3]
+        self.dropout3 = nn.Dropout2d(0.2)
+        self.bn3 = nn.BatchNorm2d(256)
+        feature_extractor += [self.conv3, self.relu3, self.dropout3, self.bn3]
 
         # fourth convolutional block
-        self.conv4 = nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)
+        self.conv4 = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1)
         self.relu4 = nn.ReLU()
-        self.bn4 = nn.BatchNorm2d(64)
-        feature_extractor += [self.conv4, self.relu4, self.bn4]
+        self.dropout4 = nn.Dropout2d(0.2)
+        self.bn4 = nn.BatchNorm2d(512)
+        feature_extractor += [self.conv4, self.relu4, self.dropout4, self.bn4]
 
         # linear classifier
         self.ap = nn.AdaptiveAvgPool2d(output_size=1)
-        self.lin = nn.Linear(64, num_classes)
+        self.fl = nn.Flatten()
+        self.lin = nn.Linear(512, num_classes)
+        classifier_head += [self.ap, self.fl, self.lin]
 
-        self.feature_extractor = nn.Sequential(feature_extractor)
-        self.classifier_head = nn.Sequential(classifier_head)
+        self.feature_extractor = nn.Sequential(*feature_extractor)
+        self.classifier_head = nn.Sequential(*classifier_head)
 
     def forward(self, x):
         """Predict audio file class."""
@@ -69,5 +121,12 @@ class NeedleNet(nn.Module):
 
 
 if __name__ == "__main__":
-    net = NeedleNet(5)
+    net = NeedleNetV1(5)
+    torch.onnx.export(
+        net,
+        torch.rand(1, 1, 64, 44),
+        "model.onnx",
+        input_names=["Mel Spectrogram"],
+        output_names=["Prediction"],
+    )
     print(net)

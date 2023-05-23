@@ -1,6 +1,10 @@
 # User ignores
 data
 new_data
+cwt_data
+notebooks
+runs
+models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
