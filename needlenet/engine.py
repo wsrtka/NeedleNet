@@ -20,6 +20,8 @@ def train_model(model, epochs, loss_fn, train_dl, test_dl, optimizer, device):
     recall_fn = torchmetrics.classification.MulticlassRecall(5)
     precision_fn = torchmetrics.classification.MulticlassPrecision(5)
 
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10)
+
     for epoch in tqdm(range(epochs)):
         print(f"Epoch #{epoch}/{epochs}")
         train_loss = 0

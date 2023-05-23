@@ -1,22 +1,20 @@
 """Script for model training."""
 # pylint: disable=import-error
 
-from datetime import date
-
 import torch
 
 from torch import nn, optim
 from torch.utils.data import random_split, DataLoader
 
-from model import NeedleNetV1
+from model import NeedleNetV2
 from engine import train_model
 from data import AudioDatasetV1
 
 
 DATASET_PATH = "./new_data"
 BATCH_SIZE = 32
-EPOCHS = 300
-LERANING_RATE = 1e-2
+EPOCHS = 150
+LERANING_RATE = 1e-3
 DEVICE = (
     "mps"
     if torch.backends.mps.is_available()
@@ -36,10 +34,9 @@ if __name__ == "__main__":
     train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
     test_dl = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True)
     # create model
-    model = NeedleNetV1(num_classes=5)
+    model = NeedleNetV2(num_classes=5)
     model = model.to(DEVICE)
     # prepare training
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=LERANING_RATE, momentum=0.9)
     train_model(model, EPOCHS, loss_fn, train_dl, test_dl, optimizer, DEVICE)
-    torch.save(model.state_dict(), f"./models/v1/model{date.today()}.pt")

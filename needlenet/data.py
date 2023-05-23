@@ -53,20 +53,6 @@ class AudioDatasetV1(DatasetFolder):
         return spec
 
 
-class AudioDatasetV2(AudioDatasetV1):
-    """Version 2 of audio dataset."""
-
-    def __init__(self, root, extensions, sample_rate):
-        super().__init__(root, extensions, sample_rate)
-
-    def _convert_to_spectogram(self, signal):
-        spec = MelSpectrogram(self.sample_rate, n_fft=1024, hop_length=216, n_mels=128)(
-            signal
-        )
-        spec = AmplitudeToDB()(spec)
-        return spec
-
-
 # used for testing
 if __name__ == "__main__":
     nd = AudioDatasetV1("./new_data", ("wav"), 22050)

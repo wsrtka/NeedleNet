@@ -21,26 +21,6 @@ class Average(nn.Module):
         return output
 
 
-class ConvBlock(nn.Module):
-    """Module implementing a convolution block."""
-
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        conv_block = []
-        conv_block.append(nn.Conv2d(in_channels, out_channels, 3, 1, 1))
-        conv_block.append(nn.BatchNorm2d(out_channels))
-        conv_block.append(nn.ReLU())
-        conv_block.append(nn.Conv2d(out_channels, out_channels, 3, 1, 1))
-        conv_block.append(nn.ReLU())
-        conv_block.append(nn.Dropout2d(0.2))
-        conv_block.append(nn.AvgPool2d(2))
-        self.conv_block = nn.Sequential(*conv_block)
-
-    def forward(self, x):
-        """Forward pass for convolution block."""
-        return self.conv_block(x)
-
-
 # pylint: disable=too-few-public-methods, invalid-name
 class NeedleNetV2(nn.Module):
     """All convolutional CNN for audio file classification."""
@@ -50,27 +30,32 @@ class NeedleNetV2(nn.Module):
         feature_extractor = []
         classifier_head = []
 
-        # first convolution block
-        feature_extractor += [ConvBlock(1, 64)]
+        feature_extractor.append(nn.Conv2d(1, 12, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(12))
+        feature_extractor.append(nn.ReLU())
+        feature_extractor.append(nn.MaxPool2d(3, 2))
 
-        # second convolution block
-        feature_extractor += [ConvBlock(64, 128)]
+        feature_extractor.append(nn.Conv2d(12, 24, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(24))
+        feature_extractor.append(nn.ReLU())
+        feature_extractor.append(nn.MaxPool2d(3, 2))
 
-        # third convolutional block
-        feature_extractor += [ConvBlock(128, 256)]
+        feature_extractor.append(nn.Conv2d(24, 48, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(48))
+        feature_extractor.append(nn.ReLU())
+        feature_extractor.append(nn.MaxPool2d(3, 2))
 
-        # fourth convolutional block
-        feature_extractor += [ConvBlock(256, 512)]
+        feature_extractor.append(nn.Conv2d(48, 48, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(48))
+        feature_extractor.append(nn.ReLU())
 
-        # linear classifier
-        classifier_head.append(nn.AdaptiveAvgPool2d(output_size=1))
+        feature_extractor.append(nn.Conv2d(48, 48, 3, padding="same"))
+        feature_extractor.append(nn.BatchNorm2d(48))
+        feature_extractor.append(nn.ReLU())
+        feature_extractor.append(nn.MaxPool2d(3, 2))
+
         classifier_head.append(nn.Flatten())
-        classifier_head.append(nn.Dropout1d(0.5))
-        classifier_head.append(nn.Linear(512, 128))
-        classifier_head.append(nn.PReLU())
-        classifier_head.append(nn.BatchNorm1d(128))
-        classifier_head.append(nn.Dropout1d(0.5))
-        classifier_head.append(nn.Linear(128, num_classes))
+        classifier_head.append(nn.Linear(1344, num_classes))
 
         self.feature_extractor = nn.Sequential(*feature_extractor)
         self.classifier_head = nn.Sequential(*classifier_head)
