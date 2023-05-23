@@ -2,6 +2,8 @@
 data
 new_data
 notebooks
+runs
+models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
