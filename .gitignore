@@ -1,6 +1,7 @@
 # User ignores
 data
 new_data
+cwt_data
 notebooks
 runs
 models
