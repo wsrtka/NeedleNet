@@ -77,11 +77,11 @@ class CWTDataset(DatasetFolder):
         cwt_spec = read_image(file_path, ImageReadMode.GRAY)
         # read corresponding dwt
         dwt = pd.read_csv(self.file_to_dwt[index])
-        dwt = torch.tensor(dwt.values)
+        dwt = torch.tensor(dwt.values).T
         # read corresponding emd
         emd = pd.read_csv(self.file_to_emd[index])
         emd = emd.iloc[:, :10]
-        emd = torch.tensor(emd.values)
+        emd = torch.tensor(emd.values).T
         # apply data transformations
         cwt_spec, dwt, emd = self._transform_data(cwt_spec, dwt, emd)
         return cwt_spec, dwt, emd, label
@@ -100,6 +100,13 @@ class CWTDataset(DatasetFolder):
     def _transform_data(self, cwt, dwt, emd):
         # cut frequencies lower than 300Hz from cwt
         cwt = cwt[:, :625]
+        # cut the first and last .5s from data
+        offset = ((cwt.shape[2] % 445) // 2) + 222
+        cwt = cwt[:, :, offset:-offset]
+        offset = ((dwt.shape[1] % 44500) // 2) + 22200
+        offset -= offset % 100
+        dwt = dwt[:, offset:-offset]
+        emd = emd[:, offset:-offset]
         return cwt, dwt, emd
 
 
@@ -108,7 +115,8 @@ if __name__ == "__main__":
     nd = CWTDataset("./cwt_data")
     print(nd.classes)
     print(len(nd))
-    print(nd[0], nd[0][0].shape)
+    print(nd[0])
+    print(nd[0][0].shape, nd[0][1].shape, nd[0][2].shape)
     print(nd.file_to_class[0])
-    plt.imshow(nd[0][0])
-    plt.show()
+    # plt.imshow(nd[0][0][0])
+    # plt.show()
