@@ -4,6 +4,7 @@
 import torch
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from torchaudio import load, functional
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
@@ -81,6 +82,8 @@ class CWTDataset(DatasetFolder):
         emd = pd.read_csv(self.file_to_emd[index])
         emd = emd.iloc[:, :10]
         emd = torch.tensor(emd.values)
+        # apply data transformations
+        cwt_spec, dwt, emd = self._transform_data(cwt_spec, dwt, emd)
         return cwt_spec, dwt, emd, label
 
     def _link_files(self):
@@ -94,6 +97,11 @@ class CWTDataset(DatasetFolder):
             self.file_to_dwt.append(dwt_link)
             self.file_to_emd.append(emd_link)
 
+    def _transform_data(self, cwt, dwt, emd):
+        # cut frequencies lower than 300Hz from cwt
+        cwt = cwt[:, :625]
+        return cwt, dwt, emd
+
 
 # used for testing
 if __name__ == "__main__":
@@ -102,3 +110,5 @@ if __name__ == "__main__":
     print(len(nd))
     print(nd[0], nd[0][0].shape)
     print(nd.file_to_class[0])
+    plt.imshow(nd[0][0])
+    plt.show()
