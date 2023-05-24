@@ -3,6 +3,7 @@
 
 import torch
 import numpy as np
+import pandas as pd
 
 from torchaudio import load, functional
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
@@ -74,10 +75,13 @@ class CWTDataset(DatasetFolder):
         file_path, label = self.file_to_class[index]
         cwt_spec = read_image(file_path, ImageReadMode.GRAY)
         # read corresponding dwt
-
+        dwt = pd.read_csv(self.file_to_dwt[index])
+        dwt = torch.tensor(dwt.values)
         # read corresponding emd
-
-        return cwt_spec, label
+        emd = pd.read_csv(self.file_to_emd[index])
+        emd = emd.iloc[:, :10]
+        emd = torch.tensor(emd.values)
+        return cwt_spec, dwt, emd, label
 
     def _link_files(self):
         self.file_to_dwt = []
