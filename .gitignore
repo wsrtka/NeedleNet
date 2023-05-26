@@ -2,6 +2,7 @@
 data
 new_data
 cwt_data
+cwt_processed
 notebooks
 runs
 models
