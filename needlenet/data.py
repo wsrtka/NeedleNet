@@ -59,15 +59,13 @@ class AudioDatasetV1(DatasetFolder):
 
 
 class CWTDataset(DatasetFolder):
-    def __init__(self, root, extensions=(".png"), dwt_dir="DWT", emd_dir="EMD"):
+    def __init__(self, root, extensions=(".png")):
         self.root = root
         self.classes, self.class_to_idx = self.find_classes(self.root)
         self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.file_to_class = DatasetFolder.make_dataset(
             self.root, self.class_to_idx, extensions=extensions
         )
-        self.dwt_dir = dwt_dir
-        self.emd_dir = emd_dir
         self._link_files()
 
     def __len__(self):
@@ -78,12 +76,9 @@ class CWTDataset(DatasetFolder):
         file_path, label = self.file_to_class[index]
         cwt_spec = read_image(file_path, ImageReadMode.GRAY)
         # read corresponding dwt
-        dwt = pd.read_csv(self.file_to_dwt[index])
-        dwt = torch.tensor(dwt.values).T
+        dwt = torch.load(self.file_to_dwt[index])
         # read corresponding emd
-        emd = pd.read_csv(self.file_to_emd[index])
-        emd = emd.iloc[:, :10]
-        emd = torch.tensor(emd.values).T
+        emd = torch.load(self.file_to_emd[index])
         # apply data transformations
         cwt_spec, dwt, emd = self._transform_data(cwt_spec, dwt, emd)
         return cwt_spec, dwt, emd, label
@@ -92,10 +87,11 @@ class CWTDataset(DatasetFolder):
         self.file_to_dwt = []
         self.file_to_emd = []
         for file, idx in self.file_to_class:
-            base_name = file.split("/")[-1]
-            base_name = base_name.split("_")[0]
-            dwt_link = f"{self.root}/{self.idx_to_class[idx]}/{self.dwt_dir}/{base_name}_dwt_scales.csv"
-            emd_link = f"{self.root}/{self.idx_to_class[idx]}/{self.emd_dir}/{base_name}_emd_imfs.csv"
+            rec_name = file.split("/")[-2]
+            part = file.split("/")[-1].split(".")[0]
+            part = part[-1]
+            dwt_link = f"{self.root}/{self.idx_to_class[idx]}/{rec_name}/dwt{part}.pt"
+            emd_link = f"{self.root}/{self.idx_to_class[idx]}/{rec_name}/emd{part}.pt"
             self.file_to_dwt.append(dwt_link)
             self.file_to_emd.append(emd_link)
 
@@ -153,7 +149,7 @@ def split_cwt_data(dataset_path, target_data_path):
 
 # used for testing
 if __name__ == "__main__":
-    nd = CWTDataset("./cwt_data")
+    nd = CWTDataset("./cwt_processed")
     # print(nd.classes)
     # print(len(nd))
     print(nd[0])
