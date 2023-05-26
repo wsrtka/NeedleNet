@@ -1,6 +1,8 @@
 """Module containing data-related functions and classes."""
 # pylint: disable=import-error
 
+import os
+
 import torch
 import numpy as np
 import pandas as pd
@@ -9,7 +11,7 @@ import matplotlib.pyplot as plt
 from torchaudio import load, functional
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 from torchvision.datasets import DatasetFolder
-from torchvision.io import read_image, ImageReadMode
+from torchvision.io import read_image, write_png, ImageReadMode
 
 
 class AudioDatasetV1(DatasetFolder):
@@ -100,23 +102,68 @@ class CWTDataset(DatasetFolder):
     def _transform_data(self, cwt, dwt, emd):
         # cut frequencies lower than 300Hz from cwt
         cwt = cwt[:, :625]
+        return cwt, dwt, emd
+
+
+def split_cwt_data(dataset_path, target_data_path):
+    os.makedirs(target_data_path, exist_ok=True)
+
+    dataset = CWTDataset(dataset_path)
+
+    for idx in range(len(dataset)):
+        # get file names
+        cwt_file, _ = dataset.file_to_class[idx]
+        dwt_file = dataset.file_to_dwt[idx]
+        emd_file = dataset.file_to_emd[idx]
+        # get target directory name
+        target_subdir = cwt_file.split("/")
+        target_subdir[1] = target_data_path
+        target_subdir[-1] = target_subdir[-1].split("_")[0]
+        target_subdir.pop(-2)
+        target_subdir = "/".join(target_subdir)
+        os.makedirs(target_subdir, exist_ok=True)
+        # read cwt
+        cwt = read_image(cwt_file, ImageReadMode.GRAY)
+        # read dwt
+        dwt = pd.read_csv(dwt_file)
+        dwt = torch.tensor(dwt.values).T
+        # read emd
+        emd = pd.read_csv(emd_file)
+        emd = emd.iloc[:, :10]
+        emd = torch.tensor(emd.values).T
         # cut the first and last .5s from data
-        offset = ((cwt.shape[2] % 445) // 2) + 222
+        offset = ((cwt.shape[-1] % 445) // 2) + 222
         cwt = cwt[:, :, offset:-offset]
-        offset = ((dwt.shape[1] % 44500) // 2) + 22200
+        cwt = cwt[:, :, cwt.shape[-1] % 445 :]
+        offset = ((dwt.shape[-1] % 44500) // 2) + 22200
         offset -= offset % 100
         dwt = dwt[:, offset:-offset]
+        dwt = dwt[:, dwt.shape[-1] % 44500 :]
         emd = emd[:, offset:-offset]
-        return cwt, dwt, emd
+        emd = emd[:, emd.shape[-1] % 44500 :]
+        # cut and save data for every 1s
+        for idx in range(cwt.shape[-1] // 445):
+            cwt_part = cwt[:, :, idx * 445 : (idx + 1) * 445]
+            write_png(cwt_part, f"{target_subdir}/cwt{idx}.png")
+            dwt_part = dwt[:, idx * 44500 : (idx + 1) * 44500]
+            torch.save(dwt_part, f"{target_subdir}/dwt{idx}.pt")
+            emd_part = emd[:, idx * 44500 : (idx + 1) * 44500]
+            torch.save(emd_part, f"{target_subdir}/emd{idx}.pt")
 
 
 # used for testing
 if __name__ == "__main__":
     nd = CWTDataset("./cwt_data")
-    print(nd.classes)
-    print(len(nd))
+    # print(nd.classes)
+    # print(len(nd))
     print(nd[0])
     print(nd[0][0].shape, nd[0][1].shape, nd[0][2].shape)
-    print(nd.file_to_class[0])
+    # print(nd.file_to_class[0])
     # plt.imshow(nd[0][0][0])
     # plt.show()
+
+    ### *
+    old_folder = "./cwt_data"
+    new_folder = "./cwt_data_modified"
+
+    # split_cwt_data('./cwt_data', './cwt_processed')
