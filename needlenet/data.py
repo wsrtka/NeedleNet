@@ -107,6 +107,9 @@ class CWTDataset(DatasetFolder):
 
 
 def split_cwt_data(dataset_path, target_data_path):
+    """Split CWT, EMD and DWT data from dataset_path into 1 second parts
+    and save them into target_data_path.
+    """
     os.makedirs(target_data_path, exist_ok=True)
 
     dataset = CWTDataset(dataset_path)
