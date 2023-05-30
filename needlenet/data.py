@@ -86,7 +86,7 @@ class CWTDataset(DatasetFolder):
         emd = torch.load(self.file_to_emd[index])
         # apply data transformations
         cwt_spec, dwt, emd = self._transform_data(cwt_spec, dwt, emd)
-        return cwt_spec, dwt, emd, label
+        return (cwt_spec, dwt, emd), label
 
     def _link_files(self):
         self.file_to_dwt = []
@@ -100,9 +100,16 @@ class CWTDataset(DatasetFolder):
             self.file_to_dwt.append(dwt_link)
             self.file_to_emd.append(emd_link)
 
+    def _normalize(self, data):
+        return (data - torch.min(data)) / (torch.max(data) - torch.min(data))
+
     def _transform_data(self, cwt, dwt, emd):
         # cut frequencies lower than 300Hz from cwt
         cwt = cwt[:, :625]
+        # normalize data
+        cwt = self._normalize(cwt)
+        dwt = self._normalize(dwt)
+        emd = self._normalize(emd)
         return cwt, dwt, emd
 
 
@@ -216,7 +223,9 @@ if __name__ == "__main__":
     # print(nd.classes)
     # print(len(nd))
     print(nd[0])
-    print(nd[0][0].shape, nd[0][1].shape, nd[0][2].shape)
+    print(len(nd[0]))
+
+    # print(nd[0][0].shape, nd[0][1].shape, nd[0][2].shape)
     # print(nd.file_to_class[0])
     # plt.imshow(nd[0][0][0])
     # plt.show()
