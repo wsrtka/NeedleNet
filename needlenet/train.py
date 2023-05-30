@@ -4,11 +4,11 @@
 import torch
 
 from torch import nn, optim
-from torch.utils.data import random_split, DataLoader
+from torch.utils.data import DataLoader
 
 from model import NeedleNetV2
 from engine import train_model
-from data import AudioDatasetV1
+from data import CWTDataset, file_length_split
 
 
 DATASET_PATH = "./new_data"
@@ -28,13 +28,13 @@ if __name__ == "__main__":
     # set manual seed for experiments
     torch.manual_seed(0)
     # get dataset
-    ds = AudioDatasetV1(root=DATASET_PATH, extensions=("wav"), sample_rate=22050)
-    train_ds, test_ds = random_split(ds, (0.8, 0.2))
+    ds = CWTDataset(root=DATASET_PATH)
+    train_ds, test_ds = file_length_split(ds, 0.8)
     # prepare dataloader
     train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
     test_dl = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True)
     # create model
-    model = NeedleNetV2(num_classes=5)
+    model = NeedleNetV2(num_classes=4)
     model = model.to(DEVICE)
     # prepare training
     loss_fn = nn.CrossEntropyLoss()
