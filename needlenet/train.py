@@ -11,7 +11,7 @@ from engine import train_model
 from data import CWTDataset, file_length_split
 
 
-DATASET_PATH = "./new_data"
+DATASET_PATH = "./cwt_processed"
 BATCH_SIZE = 32
 EPOCHS = 150
 LERANING_RATE = 1e-3
