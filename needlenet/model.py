@@ -67,7 +67,8 @@ class NeedleNetV2(nn.Module):
         cnn_features = self.flatten(cnn_features)
         dwt = self.flatten(dwt)
         emd = self.flatten(emd)
-        features = torch.cat([cnn_features, dwt, emd])
+        print(cnn_features.shape, dwt.shape, emd.shape)
+        features = torch.cat([cnn_features, dwt, emd], dim=0)
         output = self.classifier_head(features)
         return output
 
