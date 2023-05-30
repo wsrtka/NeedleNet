@@ -101,7 +101,9 @@ class CWTDataset(DatasetFolder):
             self.file_to_emd.append(emd_link)
 
     def _normalize(self, data):
-        return (data - torch.min(data)) / (torch.max(data) - torch.min(data))
+        normalized = (data - torch.min(data)) / (torch.max(data) - torch.min(data))
+        normalized = normalized.to(torch.float32)
+        return normalized
 
     def _transform_data(self, cwt, dwt, emd):
         # cut frequencies lower than 300Hz from cwt

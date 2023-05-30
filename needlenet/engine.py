@@ -27,7 +27,7 @@ def train_model(model, epochs, loss_fn, train_dl, test_dl, optimizer, device):
         train_loss = 0
         model.train()
         for _, (X, y) in enumerate(train_dl):
-            X = X.to(device)
+            X = [x.to(device) for x in X]
             y_pred = model(X)
             y_pred = y_pred.to("cpu")
             loss = loss_fn(y_pred, y)
