@@ -54,16 +54,21 @@ class NeedleNetV2(nn.Module):
         feature_extractor.append(nn.ReLU())
         feature_extractor.append(nn.MaxPool2d(3, 2))
 
-        classifier_head.append(nn.Flatten())
         classifier_head.append(nn.Linear(1344, num_classes))
 
         self.feature_extractor = nn.Sequential(*feature_extractor)
+        self.flatten = nn.Flatten()
         self.classifier_head = nn.Sequential(*classifier_head)
 
     def forward(self, x):
         """Predict audio file class."""
-        output = self.feature_extractor(x)
-        output = self.classifier_head(output)
+        cwt, dwt, emd = x
+        cnn_features = self.feature_extractor(cwt)
+        cnn_features = self.flatten(cnn_features)
+        dwt = self.flatten(dwt)
+        emd = self.flatten(emd)
+        features = torch.cat([cnn_features, dwt, emd])
+        output = self.classifier_head(features)
         return output
 
 
