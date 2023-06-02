@@ -14,7 +14,8 @@ from data import CWTDataset, file_length_split
 DATASET_PATH = "./cwt_processed"
 BATCH_SIZE = 32
 EPOCHS = 150
-LERANING_RATE = 1e-3
+LEARNING_RATE = 1e-3
+NUM_CLASSES = 5
 DEVICE = (
     "mps"
     if torch.backends.mps.is_available()
@@ -34,9 +35,18 @@ if __name__ == "__main__":
     train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
     test_dl = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True)
     # create model
-    model = NeedleNetV2(num_classes=4)
+    model = NeedleNetV2(num_classes=NUM_CLASSES)
     model = model.to(DEVICE)
     # prepare training
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=LERANING_RATE, momentum=0.9)
-    train_model(model, EPOCHS, loss_fn, train_dl, test_dl, optimizer, DEVICE)
+    optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=0.9)
+    train_model(
+        model=model,
+        epochs=EPOCHS,
+        loss_fn=loss_fn,
+        train_dl=train_dl,
+        test_dl=test_dl,
+        optimizer=optimizer,
+        device=DEVICE,
+        num_classes=NUM_CLASSES,
+    )
