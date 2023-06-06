@@ -11,14 +11,16 @@ from tqdm.auto import tqdm
 
 
 # pylint: disable=invalid-name,too-many-arguments,too-many-locals
-def train_model(model, epochs, loss_fn, train_dl, test_dl, optimizer, device):
+def train_model(
+    model, epochs, loss_fn, train_dl, test_dl, optimizer, device, num_classes
+):
     """Function to train model."""
-    writer = SummaryWriter()
+    writer = SummaryWriter(log_dir=f"runs/nnv2/{date.today()}")
 
-    acc_fn = torchmetrics.classification.MulticlassAccuracy(5)
-    f1_fn = torchmetrics.classification.MulticlassF1Score(5)
-    recall_fn = torchmetrics.classification.MulticlassRecall(5)
-    precision_fn = torchmetrics.classification.MulticlassPrecision(5)
+    acc_fn = torchmetrics.classification.MulticlassAccuracy(num_classes)
+    f1_fn = torchmetrics.classification.MulticlassF1Score(num_classes)
+    recall_fn = torchmetrics.classification.MulticlassRecall(num_classes)
+    precision_fn = torchmetrics.classification.MulticlassPrecision(num_classes)
 
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10)
 
@@ -51,7 +53,7 @@ def train_model(model, epochs, loss_fn, train_dl, test_dl, optimizer, device):
         model.eval()
         with torch.inference_mode():
             for X, y in test_dl:
-                X = X.to(device)
+                X = [x.to(device) for x in X]
                 test_pred = model(X)
                 test_pred = test_pred.to("cpu")
                 test_loss += loss_fn(test_pred, y)
