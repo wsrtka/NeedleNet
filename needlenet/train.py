@@ -12,8 +12,8 @@ from data import CWTDataset, file_length_split
 
 
 DATASET_PATH = "./cwt_processed"
-BATCH_SIZE = 32
-EPOCHS = 150
+BATCH_SIZE = 64
+EPOCHS = 30
 LEARNING_RATE = 1e-3
 NUM_CLASSES = 5
 DEVICE = (
