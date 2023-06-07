@@ -172,20 +172,20 @@ def split_cwt_data(dataset_path, target_data_path):
             # torch.save(emd_part, f"{target_subdir}/emd{idx}.pt", pickle_protocol=HIGHEST_PROTOCOL)
 
 
-def file_length_split(dataset, train_ratio):
-    """Split dataset into two subsets so that the ratio of audio files assigned to them
-    is equal to train_ratio.
+def file_length_split(dataset, ratios):
+    """Split dataset into n subsets so that each subset has its assigned ratio of samples.
     The functions takes into account a specific use case: the raw audio files are split
     into 1 second parts. In order to prevent data leakage, all samples resulting from one
     raw audio file split should be in the same subset.
 
     Args:
         dataset (DatasetFolder): The dataset to be split.
-        train_ratio (float): Ratio of training samples to testing samples.
+        ratios (iterable(float)): Ratio of training samples to testing samples.
 
     Returns:
         tuple(Subset): Two subsets resulting in the dataset split.
     """
+    assert sum(ratios) == 1, "Ratios do not sum to 1."
     # variable for holding the number of files per recording split
     data_count = {dataset.class_to_idx[c]: defaultdict(int) for c in dataset.classes}
     # variable for holding the number of examples per class
@@ -196,35 +196,36 @@ def file_length_split(dataset, train_ratio):
         data_count[idx][rec_name] += 1
         class_count[idx] += 1
     # calculate the number of instances per class that should be in the training subset
-    class_count = {k: int(count * train_ratio) for k, count in class_count.items()}
+    split_classes_count = []
+    for ratio in ratios:
+        split_classes_count.append(
+            {k: int(count * ratio) for k, count in class_count.items()}
+        )
     # variable for holding decision on subset membership of recording
     data_split = data_count.copy()
     # split the dataset
-    for idx, files in data_count.items():
+    for class_idx, files in data_count.items():
         dirs = list(files.keys())
         # ensure randomness of split
         shuffle(dirs)
         for d in dirs:
-            # put example into train dataset
-            if class_count[idx] > 0:
-                class_count[idx] -= data_count[idx][d]
-                data_split[idx][d] = 0
-            # put example into test dataset
-            else:
-                data_split[idx][d] = 1
+            for split_idx, cls_count in enumerate(split_classes_count):
+                # put example into train dataset
+                if cls_count[class_idx] > 0:
+                    cls_count[class_idx] -= data_count[class_idx][d]
+                    data_split[class_idx][d] = split_idx
+                    break
     # extract indices of dataset samples that belong in each subset
-    train_indices = []
-    test_indices = []
+    indices = [list() for _ in split_classes_count]
     for idx, (file, class_idx) in enumerate(dataset.file_to_class):
         rec_name = file.split("/")[-2]
-        if data_split[class_idx][rec_name] == 0:
-            train_indices.append(idx)
-        else:
-            test_indices.append(idx)
+        try:
+            indices[data_split[class_idx][rec_name]].append(idx)
+        except IndexError:
+            pass
     # create subsets
-    train_ds = Subset(dataset, train_indices)
-    test_ds = Subset(dataset, test_indices)
-    return train_ds, test_ds
+    subsets = [Subset(dataset, idxs) for idxs in indices]
+    return subsets
 
 
 # used for testing
@@ -241,9 +242,9 @@ if __name__ == "__main__":
     # plt.imshow(img)
     # plt.show()
 
-    train_ds, test_ds = file_length_split(nd, 0.8)
-    print(len(nd))
-    print(len(train_ds), len(test_ds))
+    ds = file_length_split(nd, (0.2, 0.2, 0.2, 0.2, 0.2))
+    for d in ds:
+        print(len(d), end=", ")
 
     ### *
     # old_folder = "./cwt_data"
