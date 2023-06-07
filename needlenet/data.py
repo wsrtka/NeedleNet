@@ -5,17 +5,19 @@ import os
 
 from random import shuffle
 from collections import defaultdict
+from pickle import HIGHEST_PROTOCOL
 
 import torch
 import numpy as np
 import pandas as pd
 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from torch.utils.data import Subset
 from torchaudio import load, functional
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 from torchvision.datasets import DatasetFolder
+from torchvision.transforms import Normalize, Resize
 from torchvision.io import read_image, write_png, ImageReadMode
 
 
@@ -72,6 +74,7 @@ class CWTDataset(DatasetFolder):
             self.root, self.class_to_idx, extensions=extensions
         )
         self._link_files()
+        self.resize_cwt = Resize((224, 160))
 
     def __len__(self):
         return len(self.file_to_class)
@@ -79,11 +82,13 @@ class CWTDataset(DatasetFolder):
     def __getitem__(self, index):
         # read file path and label
         file_path, label = self.file_to_class[index]
-        cwt_spec = read_image(file_path, ImageReadMode.GRAY)
+        cwt_spec = read_image(file_path, ImageReadMode.GRAY).to(torch.float32)
         # read corresponding dwt
-        dwt = torch.load(self.file_to_dwt[index])
+        # dwt = torch.load(self.file_to_dwt[index])
+        dwt = torch.zeros(12)
         # read corresponding emd
-        emd = torch.load(self.file_to_emd[index])
+        # emd = torch.load(self.file_to_emd[index])
+        emd = torch.zeros(12)
         # apply data transformations
         cwt_spec, dwt, emd = self._transform_data(cwt_spec, dwt, emd)
         return (cwt_spec, dwt, emd), label
@@ -92,26 +97,28 @@ class CWTDataset(DatasetFolder):
         self.file_to_dwt = []
         self.file_to_emd = []
         for file, idx in self.file_to_class:
-            rec_name = file.split("/")[-2]
+            # rec_name = file.split("/")[-2]
+            rec_name = file.split("/")[-1].split("_")[0]
             part = file.split("/")[-1].split(".")[0]
             part = part[-1]
             dwt_link = f"{self.root}/{self.idx_to_class[idx]}/{rec_name}/dwt{part}.pt"
             emd_link = f"{self.root}/{self.idx_to_class[idx]}/{rec_name}/emd{part}.pt"
+            # dwt_link = f"{self.root}/{self.idx_to_class[idx]}/DWT/{rec_name}_dwt_scales.csv"
+            # emd_link = f"{self.root}/{self.idx_to_class[idx]}/EMD/{rec_name}_emd_imfs.csv"
             self.file_to_dwt.append(dwt_link)
             self.file_to_emd.append(emd_link)
-
-    def _normalize(self, data):
-        normalized = (data - torch.min(data)) / (torch.max(data) - torch.min(data))
-        normalized = normalized.to(torch.float32)
-        return normalized
 
     def _transform_data(self, cwt, dwt, emd):
         # cut frequencies lower than 300Hz from cwt
         cwt = cwt[:, :625]
-        # normalize data
-        cwt = self._normalize(cwt)
-        dwt = self._normalize(dwt)
-        emd = self._normalize(emd)
+        # normalize spectrogram data
+        cwt = cwt / 255
+        # resize spectrogram
+        cwt = self.resize_cwt(cwt)
+        # convert to dtype compatible with mps
+        cwt = cwt.to(torch.float32)
+        dwt = dwt.to(torch.float32)
+        emd = emd.to(torch.float32)
         return cwt, dwt, emd
 
 
@@ -159,9 +166,10 @@ def split_cwt_data(dataset_path, target_data_path):
             cwt_part = cwt[:, :, idx * 445 : (idx + 1) * 445]
             write_png(cwt_part, f"{target_subdir}/cwt{idx}.png")
             dwt_part = dwt[:, idx * 44500 : (idx + 1) * 44500]
-            torch.save(dwt_part, f"{target_subdir}/dwt{idx}.pt")
+            # Removed DWT and EMD cropping due to storage shortage
+            # torch.save(dwt_part, f"{target_subdir}/dwt{idx}.pt", pickle_protocol=HIGHEST_PROTOCOL)
             emd_part = emd[:, idx * 44500 : (idx + 1) * 44500]
-            torch.save(emd_part, f"{target_subdir}/emd{idx}.pt")
+            # torch.save(emd_part, f"{target_subdir}/emd{idx}.pt", pickle_protocol=HIGHEST_PROTOCOL)
 
 
 def file_length_split(dataset, train_ratio):
@@ -207,9 +215,9 @@ def file_length_split(dataset, train_ratio):
     # extract indices of dataset samples that belong in each subset
     train_indices = []
     test_indices = []
-    for file, idx in dataset.file_to_class:
+    for idx, (file, class_idx) in enumerate(dataset.file_to_class):
         rec_name = file.split("/")[-2]
-        if data_split[idx][rec_name] == 0:
+        if data_split[class_idx][rec_name] == 0:
             train_indices.append(idx)
         else:
             test_indices.append(idx)
@@ -222,14 +230,15 @@ def file_length_split(dataset, train_ratio):
 # used for testing
 if __name__ == "__main__":
     nd = CWTDataset("./cwt_processed")
-    # print(nd.classes)
     # print(len(nd))
-    print(nd[0])
-    print(len(nd[0]))
+    # print(nd[0][0][0].shape)
+    # print(len(nd[0]))
 
     # print(nd[0][0].shape, nd[0][1].shape, nd[0][2].shape)
     # print(nd.file_to_class[0])
-    # plt.imshow(nd[0][0][0])
+    # img = nd[0][0][0]
+    # img = img.squeeze(0)
+    # plt.imshow(img)
     # plt.show()
 
     train_ds, test_ds = file_length_split(nd, 0.8)
