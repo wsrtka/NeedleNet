@@ -9,6 +9,8 @@ import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
 from tqdm.auto import tqdm
 
+from data import file_length_split
+
 
 # pylint: disable=invalid-name,too-many-arguments,too-many-locals
 def train_model(
@@ -89,3 +91,13 @@ def train_model(
         torch.save(model.state_dict(), f"./models/v1/model{date.today()}.pt")
 
     writer.close()
+
+
+# should make parameters consistent
+def k_fold_crossval(
+    model, dataset, epochs, loss_fn, batch_size, optimizer, device, num_classes, folds
+):
+    # btw, should make sure the ratios fix themselves
+    # when they do not sum exactly to 1, but to 0.(9) for example
+    ratios = [1 / folds for _ in range(folds)]
+    subsets = file_length_split(dataset, ratios)
