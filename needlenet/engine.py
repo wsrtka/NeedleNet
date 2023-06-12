@@ -7,6 +7,7 @@ import torch
 import torchmetrics
 
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import ConcatDataset, DataLoader
 from tqdm.auto import tqdm
 
 from data import file_length_split
@@ -97,7 +98,17 @@ def train_model(
 def k_fold_crossval(
     model, dataset, epochs, loss_fn, batch_size, optimizer, device, num_classes, folds
 ):
+    """Implements K-fold cross-validation for pytorch model."""
     # btw, should make sure the ratios fix themselves
     # when they do not sum exactly to 1, but to 0.(9) for example
     ratios = [1 / folds for _ in range(folds)]
     subsets = file_length_split(dataset, ratios)
+    for val_idx in range(folds):
+        iter_subsets = subsets.copy()
+        test_subset = iter_subsets.pop(val_idx)
+        train_subset = ConcatDataset(iter_subsets)
+        train_dl = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
+        test_dl = DataLoader(test_subset, batch_size=batch_size, shuffle=True)
+        train_model(
+            model, epochs, loss_fn, train_dl, test_dl, optimizer, device, num_classes
+        )
