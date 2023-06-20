@@ -1,6 +1,7 @@
 """File containing training functions."""
 # pylint: disable=import-error
 
+import os
 from datetime import date
 
 import torch
@@ -15,25 +16,26 @@ from data import file_length_split
 
 # pylint: disable=invalid-name,too-many-arguments,too-many-locals
 def train_model(
-    model, epochs, loss_fn, train_dl, test_dl, optimizer, device, num_classes
+    model, epochs, loss_fn, train_dl, test_dl, optimizer, device, num_classes, metrics
 ):
     """Function to train model."""
-    writer = SummaryWriter(log_dir=f"runs/nnv2/{date.today()}")
+    # set up metrics logging
+    os.makedirs(f"./runs/{model.__class__}", exist_ok=True)
+    writer = SummaryWriter(log_dir=f"runs/{model.__class__}/{date.today()}")
+    # dictionary for logging metrics across epochs
+    metrics_values = {str(k): list() for k in metrics}
 
-    acc_fn = torchmetrics.classification.MulticlassAccuracy(num_classes)
-    f1_fn = torchmetrics.classification.MulticlassF1Score(num_classes)
-    recall_fn = torchmetrics.classification.MulticlassRecall(num_classes)
-    precision_fn = torchmetrics.classification.MulticlassPrecision(num_classes)
-
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10)
-
+    # training
     for epoch in tqdm(range(epochs)):
         print(f"Epoch #{epoch}/{epochs}")
-        train_loss = 0
+        # set model mode to training
         model.train()
+        train_loss = 0
         for _, (X, y) in enumerate(train_dl):
-            X = [x.to(device) for x in X]
+            # forward
+            X = [x.to(device) for x in X][0]
             y_pred = model(X)
+            # backpropagation
             y_pred = y_pred.to("cpu")
             loss = loss_fn(y_pred, y)
             train_loss += loss
@@ -41,74 +43,41 @@ def train_model(
             loss.backward()
             optimizer.step()
 
-            # if batch % 10 == 0:
-            #     print(
-            #         f"{round(100 * batch * len(X) / len(train_dl.dataset), 2)}%, loss: {loss}"
-            #     )
-
+        # average out train loss
         train_loss /= len(train_dl)
+        # setup test metrics
         test_loss = 0
-        test_acc = 0
-        test_f1 = 0
-        test_recall = 0
-        test_precision = 0
+        test_metrics = {str(k): 0 for k in metrics}
 
+        # set mode to evaluation mode
         model.eval()
         with torch.inference_mode():
             for X, y in test_dl:
-                X = [x.to(device) for x in X]
+                X = [x.to(device) for x in X][0]
                 test_pred = model(X)
                 test_pred = test_pred.to("cpu")
-                test_loss += loss_fn(test_pred, y)
-                test_acc += acc_fn(test_pred, y)
-                test_f1 += f1_fn(test_pred, y)
-                test_recall += recall_fn(test_pred, y)
-                test_precision += precision_fn(test_pred, y)
+                # record averaged metrics
+                test_loss += loss_fn(test_pred, y) / len(test_dl)
+                for metric in metrics:
+                    test_metrics[str(metric)] += metric(test_pred, y) / len(test_dl)
 
-            test_loss /= len(test_dl)
-            test_acc /= len(test_dl)
-            test_f1 /= len(test_dl)
-            test_recall /= len(test_dl)
-            test_precision /= len(test_dl)
-            writer.add_scalars(
-                "Test metrics",
-                {
-                    "test_acc": test_acc,
-                    "test_f1": test_f1,
-                    "test_recall": test_recall,
-                    "test_precision": test_precision,
-                },
-                epoch,
-            )
+        # record metrics for epoch
+        for metric_name, metric_val in test_metrics.items():
+            metrics_values[metric_name].append(metric_val.item())
 
+        # add metrics to tensorboard
+        writer.add_scalars(
+            "Test metrics",
+            test_metrics,
+            epoch,
+        )
         writer.add_scalars(
             "Loss", {"train_loss": train_loss, "test_loss": test_loss}, epoch
         )
 
-        print(
-            f"Train loss: {train_loss:.5f} | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%"
-        )
+        print(f"Train loss: {train_loss:.5f} | Test loss: {test_loss:.5f}")
 
-        torch.save(model.state_dict(), f"./models/v1/model{date.today()}.pt")
+        # torch.save(model.state_dict(), f"./models/v2/model{date.today()}.pt")
 
     writer.close()
-
-
-# should make parameters consistent
-def k_fold_crossval(
-    model, dataset, epochs, loss_fn, batch_size, optimizer, device, num_classes, folds
-):
-    """Implements K-fold cross-validation for pytorch model."""
-    # btw, should make sure the ratios fix themselves
-    # when they do not sum exactly to 1, but to 0.(9) for example
-    ratios = [1 / folds for _ in range(folds)]
-    subsets = file_length_split(dataset, ratios)
-    for val_idx in range(folds):
-        iter_subsets = subsets.copy()
-        test_subset = iter_subsets.pop(val_idx)
-        train_subset = ConcatDataset(iter_subsets)
-        train_dl = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
-        test_dl = DataLoader(test_subset, batch_size=batch_size, shuffle=True)
-        train_model(
-            model, epochs, loss_fn, train_dl, test_dl, optimizer, device, num_classes
-        )
+    return metrics_values
