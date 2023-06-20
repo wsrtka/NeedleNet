@@ -91,6 +91,10 @@ class CWTDataset(DatasetFolder):
         emd = torch.zeros(12)
         # apply data transformations
         cwt_spec, dwt, emd = self._transform_data(cwt_spec, dwt, emd)
+        cwt_spec = torch.cat([cwt_spec, cwt_spec, cwt_spec])
+        cwt_spec = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(
+            cwt_spec
+        )
         return (cwt_spec, dwt, emd), label
 
     def _link_files(self):
