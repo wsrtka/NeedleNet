@@ -14,18 +14,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from torch.utils.data import Subset
-from torchaudio import load, functional
+from torchaudio import load, save, functional
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 from torchvision.datasets import DatasetFolder
 from torchvision.transforms import Normalize, Resize
 from torchvision.io import read_image, write_png, ImageReadMode
 
 
-class AudioDatasetV1(DatasetFolder):
+class AudioDataset(DatasetFolder):
     """Datset used for loading audio files."""
 
-    def __init__(self, root, extensions, sample_rate):
+    def __init__(self, root, extensions=(".wav"), sample_rate=44500):
         self.classes, self.class_to_idx = self.find_classes(root)
+        self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.file_to_class = DatasetFolder.make_dataset(
             root, self.class_to_idx, extensions=extensions
         )
@@ -126,54 +127,37 @@ class CWTDataset(DatasetFolder):
         return cwt, dwt, emd
 
 
-def split_cwt_data(dataset_path, target_data_path):
+def split_data(dataset_path, target_data_path):
     """Split CWT, EMD and DWT data from dataset_path into 1 second parts
     and save them into target_data_path.
     """
     os.makedirs(target_data_path, exist_ok=True)
 
-    dataset = CWTDataset(dataset_path)
+    dataset = AudioDataset(dataset_path)
+    sr = dataset.sample_rate
 
     for idx in range(len(dataset)):
         # get file names
-        cwt_file, _ = dataset.file_to_class[idx]
-        dwt_file = dataset.file_to_dwt[idx]
-        emd_file = dataset.file_to_emd[idx]
+        data_file, _ = dataset.file_to_class[idx]
         # get target directory name
-        target_subdir = cwt_file.split("/")
+        target_subdir = data_file.split("/")
         target_subdir[1] = target_data_path
-        target_subdir[-1] = target_subdir[-1].split("_")[0]
-        target_subdir.pop(-2)
+        target_subdir[-1] = target_subdir[-1].split(".")[0]
+        target_subdir.pop(0)
         target_subdir = "/".join(target_subdir)
         os.makedirs(target_subdir, exist_ok=True)
         # read cwt
-        cwt = read_image(cwt_file, ImageReadMode.GRAY)
-        # read dwt
-        dwt = pd.read_csv(dwt_file)
-        dwt = torch.tensor(dwt.values).T
-        # read emd
-        emd = pd.read_csv(emd_file)
-        emd = emd.iloc[:, :10]
-        emd = torch.tensor(emd.values).T
+        signal, _ = load(data_file)
         # cut the first and last .5s from data
-        offset = ((cwt.shape[-1] % 445) // 2) + 222
-        cwt = cwt[:, :, offset:-offset]
-        cwt = cwt[:, :, cwt.shape[-1] % 445 :]
-        offset = ((dwt.shape[-1] % 44500) // 2) + 22200
-        offset -= offset % 100
-        dwt = dwt[:, offset:-offset]
-        dwt = dwt[:, dwt.shape[-1] % 44500 :]
-        emd = emd[:, offset:-offset]
-        emd = emd[:, emd.shape[-1] % 44500 :]
+        offset = ((signal.shape[-1] % sr) // 2) + sr // 2
+        signal = signal[:, offset:-offset]
+        signal = signal[:, signal.shape[-1] % sr :]
+        print(signal.shape)
         # cut and save data for every 1s
-        for idx in range(cwt.shape[-1] // 445):
-            cwt_part = cwt[:, :, idx * 445 : (idx + 1) * 445]
-            write_png(cwt_part, f"{target_subdir}/cwt{idx}.png")
-            dwt_part = dwt[:, idx * 44500 : (idx + 1) * 44500]
-            # Removed DWT and EMD cropping due to storage shortage
-            # torch.save(dwt_part, f"{target_subdir}/dwt{idx}.pt", pickle_protocol=HIGHEST_PROTOCOL)
-            emd_part = emd[:, idx * 44500 : (idx + 1) * 44500]
-            # torch.save(emd_part, f"{target_subdir}/emd{idx}.pt", pickle_protocol=HIGHEST_PROTOCOL)
+        for signal_idx in range(signal.shape[-1] // sr):
+            signal_part = signal[:, signal_idx * sr : (signal_idx + 1) * sr]
+            print(signal_part.shape)
+            save(f"{target_subdir}/part{signal_idx}.wav", signal_part, sr)
 
 
 def file_length_split(dataset, ratios):
@@ -234,7 +218,7 @@ def file_length_split(dataset, ratios):
 
 # used for testing
 if __name__ == "__main__":
-    nd = CWTDataset("./cwt_processed")
+    # nd = CWTDataset("./cwt_processed")
     # print(len(nd))
     # print(nd[0][0][0].shape)
     # print(len(nd[0]))
@@ -246,12 +230,12 @@ if __name__ == "__main__":
     # plt.imshow(img)
     # plt.show()
 
-    ds = file_length_split(nd, (0.2, 0.2, 0.2, 0.2, 0.2))
-    for d in ds:
-        print(len(d), end=", ")
+    # ds = file_length_split(nd, (0.2, 0.2, 0.2, 0.2, 0.2))
+    # for d in ds:
+    #     print(len(d), end=", ")
 
     ### *
-    # old_folder = "./cwt_data"
-    # new_folder = "./cwt_data_modified"
+    old_folder = "./magdeburg_denoised"
+    new_folder = "./data_denoised"
 
-    # split_cwt_data('./cwt_data', './cwt_processed')
+    split_data(old_folder, new_folder)

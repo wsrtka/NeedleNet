@@ -33,7 +33,7 @@ def train_model(
         train_loss = 0
         for _, (X, y) in enumerate(train_dl):
             # forward
-            X = [x.to(device) for x in X][0]
+            X = X.to(device)
             y_pred = model(X)
             # backpropagation
             y_pred = y_pred.to("cpu")
@@ -53,7 +53,7 @@ def train_model(
         model.eval()
         with torch.inference_mode():
             for X, y in test_dl:
-                X = [x.to(device) for x in X][0]
+                X = X.to(device)
                 test_pred = model(X)
                 test_pred = test_pred.to("cpu")
                 # record averaged metrics

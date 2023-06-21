@@ -12,9 +12,9 @@ import torchmetrics
 from torch import nn, optim
 from torch.utils.data import DataLoader, ConcatDataset
 
-from model import NeedleNetV2
-from engine import train_model, k_fold_crossval
-from data import CWTDataset, file_length_split
+from model import NeedleNetV1
+from engine import train_model
+from data import AudioDataset, file_length_split
 
 
 PARSER = ArgumentParser(
@@ -24,10 +24,10 @@ PARSER = ArgumentParser(
 PARSER.add_argument("-cv", action="store_true")
 
 
-DATASET_PATH = "./cwt_processed"
-BATCH_SIZE = 64
-EPOCHS = 20
-LEARNING_RATE = 1e-3
+DATASET_PATH = "./data_denoised"
+BATCH_SIZE = 32
+EPOCHS = 300
+LEARNING_RATE = 1e-2
 NUM_CLASSES = 5
 DEVICE = (
     "mps"
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     args = PARSER.parse_args()
 
     # initialize dataset
-    ds = CWTDataset(root=DATASET_PATH)
+    ds = AudioDataset(root=DATASET_PATH)
     ys = []
     for _, y in ds:
         ys.append(y)
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     print(f"Classes in dataset:")
     for class_name, count in class_counts.items():
         print(
-            f"\tClass {class_name} (idx {ds.class_to_idx[class_name]}): {count} instances."
+            f"\tClass {ds.idx_to_class[class_name]} (idx {class_name}): {count} instances."
         )
 
     # initialize loss function
@@ -73,14 +73,15 @@ if __name__ == "__main__":
         subsets = file_length_split(ds, ratios)
         report = {str(metric): {"best": 0, "average": []} for metric in METRICS}
         for val_idx in range(CV_FOLDS):
+            # initialize training and testing datasets
             iter_subsets = subsets.copy()
             test_subset = iter_subsets.pop(val_idx)
             train_subset = ConcatDataset(iter_subsets)
+            # initialize dataloaders
             train_dl = DataLoader(train_subset, batch_size=BATCH_SIZE, shuffle=True)
             test_dl = DataLoader(test_subset, batch_size=BATCH_SIZE, shuffle=True)
-            model = NeedleNetV2(NUM_CLASSES)
-            # model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
-            # model.fc = torch.nn.Linear(in_features=512, out_features=NUM_CLASSES)
+            # initialize model
+            model = NeedleNetV1(NUM_CLASSES)
             model = model.to(DEVICE)
             optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=0.9)
             result = train_model(
