@@ -19,7 +19,7 @@ from data import AudioDataset, file_length_split
 
 PARSER = ArgumentParser(
     prog="NeedleNet Training",
-    description="Training script for audio classification tasks associated with the Vibronav project.",
+    description="Training script for audio DL tasks associated with the Vibronav project.",
 )
 PARSER.add_argument("-cv", action="store_true")
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     for _, y in ds:
         ys.append(y)
     class_counts = Counter(ys)
-    print(f"Classes in dataset:")
+    print("Classes in dataset:")
     for class_name, count in class_counts.items():
         print(
             f"\tClass {ds.idx_to_class[class_name]} (idx {class_name}): {count} instances."
@@ -92,7 +92,6 @@ if __name__ == "__main__":
                 test_dl,
                 optimizer,
                 DEVICE,
-                NUM_CLASSES,
                 METRICS,
             )
             for metric_name, values in result.items():
@@ -110,12 +109,12 @@ if __name__ == "__main__":
         pprint.pprint(report)
     # start normal training
     else:
-        train_ds, test_ds = file_length_split(ds, 0.8)
+        train_ds, test_ds = file_length_split(ds, (0.8, 0.2))
         # prepare dataloader
         train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
         test_dl = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=True)
         # create model
-        model = NeedleNetV2(num_classes=NUM_CLASSES)
+        model = NeedleNetV1(num_classes=NUM_CLASSES)
         model = model.to(DEVICE)
         optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=0.9)
         train_model(
@@ -126,5 +125,5 @@ if __name__ == "__main__":
             test_dl=test_dl,
             optimizer=optimizer,
             device=DEVICE,
-            num_classes=NUM_CLASSES,
+            metrics=METRICS,
         )

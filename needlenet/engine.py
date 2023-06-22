@@ -5,25 +5,20 @@ import os
 from datetime import date
 
 import torch
-import torchmetrics
 
 from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data import ConcatDataset, DataLoader
 from tqdm.auto import tqdm
-
-from data import file_length_split
 
 
 # pylint: disable=invalid-name,too-many-arguments,too-many-locals
-def train_model(
-    model, epochs, loss_fn, train_dl, test_dl, optimizer, device, num_classes, metrics
-):
+def train_model(model, epochs, loss_fn, train_dl, test_dl, optimizer, device, metrics):
     """Function to train model."""
     # set up metrics logging
-    os.makedirs(f"./runs/{model.__class__}", exist_ok=True)
-    writer = SummaryWriter(log_dir=f"runs/{model.__class__}/{date.today()}")
+    model_class = type(model).__name__
+    os.makedirs(f"./runs/{model_class}", exist_ok=True)
+    writer = SummaryWriter(log_dir=f"runs/{model_class}/{date.today()}")
     # dictionary for logging metrics across epochs
-    metrics_values = {str(k): list() for k in metrics}
+    metrics_values = {str(k): [] for k in metrics}
 
     # training
     for epoch in tqdm(range(epochs)):
@@ -77,7 +72,8 @@ def train_model(
 
         print(f"Train loss: {train_loss:.5f} | Test loss: {test_loss:.5f}")
 
-        # torch.save(model.state_dict(), f"./models/v2/model{date.today()}.pt")
+        os.makedirs(f"./models/{model_class}", exist_ok=True)
+        torch.save(model.state_dict(), f"./models/v2/model{date.today()}.pt")
 
     writer.close()
     return metrics_values
