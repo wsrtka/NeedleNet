@@ -48,6 +48,7 @@ class AudioDataset(DatasetFolder):
     def _transform_signal(self, signal):
         signal = signal.numpy()
         signal = self._time_shift(signal)
+        # todo: remove average of signal
         signal = signal / np.max(np.abs(signal))
         signal = torch.from_numpy(signal)
         spec = self._convert_to_spectogram(signal)
@@ -235,7 +236,7 @@ if __name__ == "__main__":
     #     print(len(d), end=", ")
 
     ### *
-    old_folder = "./magdeburg_denoised"
-    new_folder = "./data_denoised"
+    old_folder = "./data"
+    new_folder = "./new_data"
 
     split_data(old_folder, new_folder)

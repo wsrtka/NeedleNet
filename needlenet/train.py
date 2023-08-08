@@ -24,9 +24,9 @@ PARSER = ArgumentParser(
 PARSER.add_argument("-cv", action="store_true")
 
 
-DATASET_PATH = "./data_denoised"
+DATASET_PATH = "./new_data"
 BATCH_SIZE = 32
-EPOCHS = 300
+EPOCHS = 150
 LEARNING_RATE = 1e-2
 NUM_CLASSES = 5
 DEVICE = (
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     args = PARSER.parse_args()
 
     # initialize dataset
-    ds = AudioDataset(root=DATASET_PATH)
+    ds = AudioDataset(root=DATASET_PATH, extensions=[".wav"])
     ys = []
     for _, y in ds:
         ys.append(y)

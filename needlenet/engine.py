@@ -16,7 +16,7 @@ def train_model(model, epochs, loss_fn, train_dl, test_dl, optimizer, device, me
     # set up metrics logging
     model_class = type(model).__name__
     os.makedirs(f"./runs/{model_class}", exist_ok=True)
-    writer = SummaryWriter(log_dir=f"runs/{model_class}/{date.today()}")
+    writer = SummaryWriter(log_dir=f"runs/{model_class}/{date.today()}/e150Magdeburg")
     # dictionary for logging metrics across epochs
     metrics_values = {str(k): [] for k in metrics}
 
