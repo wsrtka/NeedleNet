@@ -1,0 +1,6 @@
+outs:
+- md5: 29e0fe4ff3060a2ad3001e19df63fbb4.dir
+  size: 39961723987
+  nfiles: 1434
+  hash: md5
+  path: cwt_data
