@@ -24,7 +24,7 @@ PARSER = ArgumentParser(
 PARSER.add_argument("-cv", action="store_true")
 
 
-DATASET_PATH = "./new_data"
+DATASET_PATH = "./magdeburg_denoised_dataset"
 BATCH_SIZE = 32
 EPOCHS = 150
 LEARNING_RATE = 1e-2
