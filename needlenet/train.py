@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader, ConcatDataset
 
 from model import NeedleNetV1
 from engine import train_model
-from data import AudioDataset, file_length_split
+from data import AudioDataset, file_length_split, CWTDataset
 
 
 PARSER = ArgumentParser(
@@ -24,7 +24,7 @@ PARSER = ArgumentParser(
 PARSER.add_argument("-cv", action="store_true")
 
 
-DATASET_PATH = "./magdeburg_denoised_dataset"
+DATASET_PATH = "./cwt_dataset"
 BATCH_SIZE = 32
 EPOCHS = 150
 LEARNING_RATE = 1e-2
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     args = PARSER.parse_args()
 
     # initialize dataset
-    ds = AudioDataset(root=DATASET_PATH, extensions=[".wav"])
+    ds = CWTDataset(root=DATASET_PATH)
     ys = []
     for _, y in ds:
         ys.append(y)
