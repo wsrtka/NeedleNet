@@ -26,6 +26,7 @@ class AudioDatasetV1(DatasetFolder):
 
     def __init__(self, root, extensions, sample_rate):
         self.classes, self.class_to_idx = self.find_classes(root)
+        self.idx_to_class = {idx: c for c, idx in self.class_to_idx.items()}
         self.file_to_class = DatasetFolder.make_dataset(
             root, self.class_to_idx, extensions=extensions
         )
