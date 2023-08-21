@@ -234,7 +234,7 @@ def file_length_split(dataset, ratios):
 
 # used for testing
 if __name__ == "__main__":
-    nd = CWTDataset("./cwt_processed")
+    # nd = CWTDataset("./cwt_processed")
     # print(len(nd))
     # print(nd[0][0][0].shape)
     # print(len(nd[0]))
@@ -246,12 +246,12 @@ if __name__ == "__main__":
     # plt.imshow(img)
     # plt.show()
 
-    ds = file_length_split(nd, (0.2, 0.2, 0.2, 0.2, 0.2))
-    for d in ds:
-        print(len(d), end=", ")
+    # ds = file_length_split(nd, (0.2, 0.2, 0.2, 0.2, 0.2))
+    # for d in ds:
+    #     print(len(d), end=", ")
 
     ### *
-    # old_folder = "./cwt_data"
-    # new_folder = "./cwt_data_modified"
+    old_folder = "./cwt_data"
+    new_folder = "./cwt_data_modified"
 
-    # split_cwt_data('./cwt_data', './cwt_processed')
+    split_cwt_data(old_folder, new_folder)
